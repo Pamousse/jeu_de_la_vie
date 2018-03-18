@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+<title>C'est le jeu de la vie !</title>
+</head>
+<body>
+    <canvas id="espace" width="501" height="520" style="border:1px solid #d3d3d3;"></canvas>
+	<canvas id="graph" width="500" height="520" style="border:1px solid #a4a4a4;"></canvas>
+	<script language="javascript">
+		/* initialisation des variables et tableaux */
+		var taille_points = 4;
+		var nb_points = 120; // il faut taille_points x nb_points < 500
+		vitesse = 1; /* temps de rafraichissement en millisecondes */
+		var iter = 0;
+		var dens_max = 0;
+		var dens_min = 100;
+		var tableau_A = new Array();
+		var tableau_B = new Array(); // tableau provisoire corresponant à la configuration t+1
+		var deces = new Array();
+		var graphique = new Array(); // tableau contenant l'historique de la densité
+		var naissances = new Array();
+		var freq = 9999;
+		var converge = 0;
+		for (var i = 0;i < nb_points;i+= 1)
+			{tableau_A[i] = new Array();
+			 tableau_B[i] = new Array();
+			 deces[i] = new Array();
+			 naissances[i] = new Array();
+			}
+
+		/* remplissage aléatoire du tableau : x % de chance d'avoir un pixel */
+		for (var x = 1;x < nb_points;x+= 1)
+			{for (var y = 1;y < nb_points;y+= 1)
+				{tableau_A[x][y] = Math.round(Math.random()-0.15);
+				}
+			}
+	
+		var context = document.getElementById("espace").getContext('2d');
+		var ctx = document.getElementById("graph").getContext('2d');
+		context.lineWidth=taille_points;
+		ctx.lineWidth=1;
+		context.lineCap='round'; // forme du bout de la ligne
+		ctx.lineCap='round';
+		dessin_3();
+		
+		function dessin_1()
+			{for (var x = 0;x < nb_points;x+= 1)
+				{for (var y = 0;y < nb_points;y+= 1)
+					{// alert(x+'-'+y);
+					if (x==0)
+						{x_moins_1=nb_points-1;
+						}
+					 else
+						{x_moins_1=x-1;
+						}
+					 //alert(x_moins_1);
+					 if (x==nb_points-1)
+						{x_plus_1=0;
+						}
+					 else
+						{x_plus_1=x+1;
+						}
+					 if (y==0)
+						{y_moins_1=nb_points-1;
+						}
+					 else
+						{y_moins_1=y-1;
+						}
+					 if (y==nb_points-1)
+						{y_plus_1=0;
+						}
+					 else
+						{y_plus_1=y+1;
+						}
+					 var environnement = tableau_A[x_moins_1][y_moins_1]+tableau_A[x][y_moins_1]+tableau_A[x_plus_1][y_moins_1]+tableau_A[x_moins_1][y]+tableau_A[x_plus_1][y]+tableau_A[x_moins_1][y_plus_1]+tableau_A[x][y_plus_1]+tableau_A[x_plus_1][y_plus_1];
+					 naissances[x][y] = 0;
+					 deces[x][y] = 0;
+					 tableau_B[x][y] = 0;
+					 if (((environnement == 2) || (environnement == 3)) && (tableau_A[x][y] == 1))
+						{tableau_B[x][y] = 1;
+						}
+					 if ((environnement == 3) && (tableau_A[x][y] == 0))
+						{tableau_B[x][y] = 1;
+						 naissances[x][y] = 1;
+						}
+					 if ((tableau_A[x][y] == 1) && (tableau_B[x][y] == 0))
+						{deces[x][y] = 1;
+						}
+					}
+				}
+
+				for (var x = 0;x < nb_points;x+= 1)
+				{for (var y = 0;y < nb_points;y+= 1)
+					{tableau_A[x][y] = tableau_B[x][y];
+					}
+				} 
+
+			 /* affichage des décès */
+			 context.strokeStyle='red';		 
+			 for (var x = 0;x < nb_points;x+= 1)
+				{for (var y = 0;y < nb_points;y+= 1)
+					{if (deces[x][y] == 1)
+						{context.beginPath();
+						 context.moveTo(x*taille_points,y*taille_points);
+						 context.lineTo(x*taille_points,y*taille_points);
+						 context.stroke();
+						}
+					}
+				}
+			 setTimeout("dessin_2()", vitesse);
+			}
+
+		function dessin_2()
+			{/* affichage des naissances */
+			 context.strokeStyle='green';		 
+			 for (var x = 0;x < nb_points;x+= 1)
+				{for (var y = 0;y < nb_points;y+= 1)
+					{if (naissances[x][y] == 1)
+						{context.beginPath();
+						 context.moveTo(x*taille_points,y*taille_points);
+						 context.lineTo(x*taille_points,y*taille_points);
+						 context.stroke();
+						}
+					}
+				}
+			 setTimeout("dessin_3()", vitesse);
+			}
+
+		function dessin_3()
+			{/* affichage de la nouvelle matrice */ 
+			 context.strokeStyle='black';
+			 context.clearRect(0,0,501,520);
+			 iter = iter+1;
+			 nombre = 0;
+			 for (var x = 0;x < nb_points;x+= 1)
+				{for (var y = 0;y < nb_points;y+= 1)
+					{if (tableau_A[x][y] == 1)
+						{context.beginPath();
+						 context.moveTo(x*taille_points,y*taille_points);
+						 context.lineTo(x*taille_points,y*taille_points);
+						 context.stroke();
+						 nombre = nombre + 1;
+						}
+					}
+				}
+			 // affichage des compteurs
+			 context.font = "14px Arial";
+			 context.baseline = "top";
+			 densite = Math.round(nombre/25)/10;
+			 if (densite > dens_max)
+				{dens_max = densite;}
+			 if (densite < dens_min)
+				{dens_min = densite;}
+			 context.fillText ("itérations : "+iter,5,515);
+			 context.fillText ("densite : "+densite+" %",120,515);
+			 context.fillText ("min : "+dens_min+" %",240,515);
+			 context.fillText ("max : "+dens_max+" %",330,515);
+			 
+			 // tracé de la courbe
+			 graphique[iter]=densite;
+			 reduc = Math.trunc(iter/500)+1; // facteur d'ajustement des abscisses en fonction du nombre d'itérations
+			 // grille
+ 			 ctx.clearRect(0,0,500,520);
+			 ctx.strokeStyle='black';
+			 context.lineWidth=0,5;
+			 ctx.beginPath();
+			 for (var i=0;i<6;i++)
+				{ctx.moveTo(0,100*i);
+				 ctx.lineTo(500,100*i);
+				 ctx.stroke();
+				}
+			 for (var i = 1;i < reduc*5;i++)
+				{ctx.beginPath();
+				 ctx.moveTo(i*100/reduc,500);
+				 ctx.lineTo(i*100/reduc,0);
+				 ctx.stroke();
+				}
+			 ctx.strokeStyle='red';
+			 for (var i = 0;i < iter;i++)
+				{ctx.beginPath();
+				 ctx.moveTo(i/reduc,500-5*4*graphique[i]); // *' -> ordonnées de 0 à 25 %
+					 ctx.lineTo(i/reduc,500-5*4*graphique[i+1]);
+					 ctx.stroke();
+				}
+			 // recherche de la stabilisation et de la fréquence
+			 if (iter > 100)
+				{for (var i = 20;i>0;i--)
+					{if ((graphique[iter-100]==graphique[iter-100+i])&&(graphique[iter]==graphique[iter-100+2*i])&&(graphique[iter]==graphique[iter-100+3*i])&&(graphique[iter]==graphique[iter-100+4*i])&&(graphique[iter]==graphique[iter-100+5*i]))
+						{converge=iter;
+						 freq=i;
+						 alert("convergence en "+converge+" itérations - fréquence = "+freq);
+						}
+					}
+				}
+			 setTimeout("dessin_1()", vitesse);
+			}
+			
+	</script>
+</body>
+</html>
